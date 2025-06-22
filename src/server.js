@@ -10,10 +10,12 @@ import hobbyRoutes from "./routes/hobby.route.js";
 import ratingRoutes from "./routes/rating.route.js";
 import { PrismaClient } from "@prisma/client";
 import { generalLimiter, authLimiter } from "./middleware/rateLimiter.js";
-
+import job from "./config/cron.js";
 dotenv.config();
 const app = express();
 const prisma = new PrismaClient();
+
+job.start();
 //middleware
 app.use(express.json());
 app.use("/api", generalLimiter); // Applies to all /api routes
