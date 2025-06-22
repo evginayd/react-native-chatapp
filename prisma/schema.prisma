@@ -1,0 +1,103 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum FriendshipStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum ChatType {
+  TEMP
+  FRIEND
+  GROUP
+}
+
+enum ParticipantRole {
+  ADMIN
+  MEMBER
+}
+
+model User {
+  id            String   @id @default(uuid())
+  username      String   @unique
+  email         String   @unique
+  password      String
+  createdAt     DateTime @default(now())
+  averageRating Float    @default(0.0)
+  ratingCount   Int      @default(0)
+
+  messagesSent Message[] @relation("SentMessages")
+
+  friendsInitiated Friendship[] @relation("UserFriendsInitiated")
+  friendsReceived  Friendship[] @relation("UserFriendsReceived")
+
+  chats   ChatParticipant[]
+  hobbies Hobby[]           @relation("UserHobbies")
+
+  bio        String?
+  avatarUrl  String?
+  lastOnline DateTime?
+  nativeLanguage   String?
+  targetLanguage   String?
+
+}
+
+model Friendship {
+  id        Int              @id @default(autoincrement())
+  userId    String
+  friendId  String
+  createdAt DateTime         @default(now())
+  status    FriendshipStatus @default(PENDING)
+
+  user   User @relation("UserFriendsInitiated", fields: [userId], references: [id])
+  friend User @relation("UserFriendsReceived", fields: [friendId], references: [id])
+
+  @@unique([userId, friendId])
+}
+
+model Chat {
+  id           Int               @id @default(autoincrement())
+  type         ChatType          @default(TEMP)
+  createdAt    DateTime          @default(now())
+  participants ChatParticipant[]
+  messages     Message[]
+  isTemporary  Boolean           @default(true)
+  expiresAt    DateTime?
+}
+
+model ChatParticipant {
+  id       Int             @id @default(autoincrement())
+  chatId   Int
+  userId   String
+  joinedAt DateTime        @default(now())
+  chat     Chat            @relation(fields: [chatId], references: [id])
+  user     User            @relation(fields: [userId], references: [id])
+  role     ParticipantRole @default(MEMBER)
+  leftAt   DateTime?
+
+  @@unique([chatId, userId])
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  chatId    Int
+  senderId  String
+  content   String
+  createdAt DateTime @default(now())
+
+  chat   Chat @relation(fields: [chatId], references: [id])
+  sender User @relation("SentMessages", fields: [senderId], references: [id])
+}
+
+model Hobby {
+  id    Int    @id @default(autoincrement())
+  name  String @unique
+  users User[] @relation("UserHobbies")
+}
