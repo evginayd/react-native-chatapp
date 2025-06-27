@@ -11,17 +11,30 @@ import ratingRoutes from "./routes/rating.route.js";
 import { PrismaClient } from "@prisma/client";
 import { generalLimiter, authLimiter } from "./middleware/rateLimiter.js";
 import job from "./config/cron.js";
+import cors from "cors";
+
 dotenv.config();
 const app = express();
-const prisma = new PrismaClient();
-
-job.start();
-//middleware
-app.use(express.json());
-app.use("/api", generalLimiter); // Applies to all /api routes
-
 const PORT = process.env.PORT || 5001;
 
+// ✅ Enable CORS for all origins (default)
+app.use(cors());
+
+// If you want to allow only a specific frontend domain:
+// app.use(cors({ origin: "https://your-frontend-url.com" }));
+
+app.set("trust proxy", 1); // for rate limiter if needed
+
+// ✅ Optional root route for Render keep-alive
+app.get("/", (req, res) => res.send("✅ Server is alive"));
+
+// ✅ Start the keep-alive cron
+job.start();
+
+// JSON middleware
+app.use(express.json());
+
+app.use("/api", generalLimiter); // Applies to all /api routes
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/messages", messageRoutes);
